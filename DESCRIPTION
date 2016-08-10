@@ -1,0 +1,10 @@
+Package: facer
+Type: Package
+Title: Analyze Facial Motion Data
+Version: 0.1.0
+Author: Julian Faraway
+Maintainer: <jjf23@bath.ac.uk>
+Description: Analyzes facial motion data files use shape data analysis methods
+License: GPL
+LazyData: TRUE
+RoxygenNote: 5.0.1
