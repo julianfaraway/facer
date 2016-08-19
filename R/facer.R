@@ -5,8 +5,10 @@
 #' @param numskip The number of lines to skip at the beginning of the motion file
 #' @return a data matrix of the motion file
 #'
+#' @export
 read_face_file <- function(fname,mfconfig,numskip=5){
-  sm <- read.table(fname,skip=numskip,sep="\t",colClasses=rep("numeric",3*mfconfig$nmarkers+2),flush=TRUE,fill=TRUE)[,3:(3*nummarkers+2)]
+  sm <- read.table(fname,skip=numskip,sep="\t",colClasses=rep("numeric",3*mfconfig$nmarkers+2),
+                   flush=TRUE,fill=TRUE)[,3:(3*mfconfig$nmarkers+2)]
   sm = data.matrix(sm)
   shapex <- array(NA, dim = c(mfconfig$nmarkers, 3, mfconfig$nframes))
 
@@ -61,10 +63,12 @@ plotface <- function(fm,mfconfig,fm2=NULL,view=c("front","side","top"), num=TRUE
   n <- nrow(fm)
   dirm <- match.arg(dirm)
   view = match.arg(view)
-  orthproj = switch(view, "front" = c(1,2), "side" = c(3,2), "top"=c(1,3))
+  orthproj = switch(view, "front" = mfconfig$coordir[c(1,2)],
+                          "side" = mfconfig$coordir[c(3,2)],
+                          "top" = mfconfig$coordir[c(1,3)])
 
   latdir = mfconfig$coordir[1]
-  if(1 %in% orthproj){ # is lateral direction in selected view
+  if(latdir %in% orthproj){ # is lateral direction in selected view
     selpts = 1:n
   }else{ # which markers are on the right
     rightside = which(fm[,latdir] < mean(fm[mfconfig$midline,latdir]))
@@ -112,7 +116,6 @@ plotface <- function(fm,mfconfig,fm2=NULL,view=c("front","side","top"), num=TRUE
 #'
 #' @return nothing - a plot is created
 #' @export
-#'
 faceframe <- function(fc1,mfconfig,fc2=NULL,rang=NULL,box=FALSE,header=FALSE){
 
   n <- mfconfig$nmarkers
@@ -177,8 +180,6 @@ faceframe <- function(fc1,mfconfig,fc2=NULL,rang=NULL,box=FALSE,header=FALSE){
 #'   markers, the markers which lie on the midline of the face and the
 #'   coordinate directions as (lateral, vertical, frontal)
 #' @export
-#'
-#' @examples
 extmfconfig = function(fname, nskip=5){
   hs = readLines(fname,n=nskip)
   l3 = strsplit(hs[3],"\t")[[1]]
@@ -187,7 +188,8 @@ extmfconfig = function(fname, nskip=5){
   marklabs = strsplit(hs[4],"\t")[[1]][-c(1,2)]
   if(length(marklabs)/3 != nmarkers) warning("number of marker labels not equal to number of markers")
   marklabs = marklabs[3*(1:nmarkers)-2]
-  midline = NULL # needs to be specified by user
+  fl = substring(marklabs,1,1)
+  midline = which(!(fl %in% c("r","l","R","L"))) # guess which are midline markers but needs checking
   coordir = 1:3 # needs to be  checked by user
   list(nframes=nframes, nmarkers=nmarkers, marklabs=marklabs,midline=midline,coordir=coordir)
 }
@@ -204,8 +206,6 @@ extmfconfig = function(fname, nskip=5){
 #'
 #' @return nothing - find movie file in "animations" directory
 #' @export
-#'
-#' @examples
 facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,moviename="movie.mov",header=NULL){
 
   nframes = mfconfig$nframes
@@ -274,34 +274,89 @@ facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,movie
 #'
 #' @return A facial shape matrix rotated to have minimum variance in frontal and lateral directions
 #' @export
-#'
 averecface = function(shapem, mconfig){
+  latdir = mfconfig$coordir[1]
+  vertdir = mfconfig$coordir[2]
+  frontdir = mfconfig$coordir[3]
   mshape = procGPA(shapem, pcaoutput = FALSE, distances = FALSE)$mshape
-  rot2d = function(theta,x,y) c(cos(theta)*x - sin(theta)*y, sin(theta)*x + cos(theta)*y)
   # rotate in the saggital plane
-  aseq = seq(-pi/4, pi/4, length=100)
+  aseq = seq(-pi/4, pi/4, length=1000)
   sdv = numeric(length(aseq))
   for(j in seq_along(aseq)){
-    theta = aseq[j]
-    cshape = sweep(mshape,2,colMeans(mshape))
-    for(i in 1:mfconfig$nmarkers) cshape[i,-1] = rot2d(theta,cshape[i,2],cshape[i,3])
-    sdv[j] = sd(cshape[,3])
+    rshape = rotface(mshape, aseq[j], c(vertdir, frontdir))
+    sdv[j] = sd(rshape[,frontdir])
   }
   bestang = aseq[which.min(sdv)]
-  cshape = sweep(mshape,2,colMeans(mshape))
-  for(i in 1:mfconfig$nmarkers) cshape[i,-1] = rot2d(bestang,cshape[i,2],cshape[i,3])
-  mshape = cshape
+  mshape = rotface(mshape, bestang, c(vertdir, frontdir))
+
+  # rotate in the horizontal plane
+  aseq = seq(-pi/4, pi/4, length=1000)
+  sdv = numeric(length(aseq))
+  for(j in seq_along(aseq)){
+    rshape = rotface(mshape, aseq[j], c(latdir, frontdir))
+    sdv[j] = sd(rshape[,frontdir])
+  }
+  bestang = aseq[which.min(sdv)]
+  mshape = rotface(mshape, bestang, c(latdir, frontdir))
+
   # rotate in the frontal plane
-  aseq = seq(-pi/10, pi/10, length=100)
-  sdv = numeric(length(aseq))
+  aseq = seq(-pi/4, pi/4, length=1000)
   for(j in seq_along(aseq)){
-    theta = aseq[j]
-    cshape = sweep(mshape,2,colMeans(mshape))
-    for(i in 1:mfconfig$nmarkers) cshape[i,-3] = rot2d(theta,cshape[i,1],cshape[i,2])
-    sdv[j] = sum(abs(cshape[mfconfig$midline,1]))
+    rshape = rotface(mshape, aseq[j], c(latdir, vertdir))
+    sdv[j] = sd(rshape[,latdir])+sd(rshape[,vertdir])
   }
   bestang = aseq[which.min(sdv)]
-  cshape = sweep(mshape,2,colMeans(mshape))
-  for(i in 1:mfconfig$nmarkers) cshape[i,-3] = rot2d(bestang,cshape[i,1],cshape[i,2])
-  cshape
+  rotface(mshape, bestang, c(latdir, frontdir))
+}
+
+#' Rotate a face matrix in SD
+#'
+#' @param sm The face matrix
+#' @param theta Angle of rotation
+#' @param dirs Coordinate axes of plane of rotation - first dir is theta=0
+#'
+#' @return a face matrix
+#' @export
+rotface = function(sm,theta,dirs){
+  mr = diag(3)
+  mr[dirs[1],dirs[1]] = cos(theta)
+  mr[dirs[2],dirs[2]] = cos(theta)
+  mr[dirs[1],dirs[2]] = -sin(theta)
+  mr[dirs[2],dirs[1]] = sin(theta)
+  sm %*% mr
+}
+
+#' Fill in missing values using linear interpolation
+#'
+#' @param x 1D motion trace
+#'
+#' @return 1D motion trace
+#' @export
+misfixlin <- function(x){
+  mv <- is.na(x)
+  if(sum(mv) == 0) return(x) # if nothing missing, do nothing
+  if(sum(mv) > length(x)-2) return(x) # if everything missing, return missing
+  n <- length(x)
+  approx(1:n,x,rule=2,xout=1:n)$y
+}
+
+#' Process a facial motion to fill-in missing values and report diagnostics
+#'
+#' @param sm a facial motion
+#' @param MISSMAX maximum allowable number of missing cases in a marker (default=50)
+#'
+#' @return a list containing a facial motion with missing values filled in, the number of
+#' missing cases in each marker, the max jump in a marker between frames
+#' @export
+cleansm = function(sm,MISSMAX=50){
+  nmiss = apply(sm,1,function(x) sum(is.na(x)))/3
+  nobs = dim(sm)[3]
+  missmark = which(nmiss == nobs)
+  if(any(nmiss > MISSMAX)){
+    warning(paste("More than",MISSMAX,"missing values in marker(s):", which(nmiss > MISSMAX)))
+  }
+  fm = aperm(apply(sm,c(1,2),misfixlin),c(2,3,1))
+  dm = abs(fm[,,-nobs] - fm[,,-1])
+  sc = max(apply(dm, 1, sum))/3
+  list(sm=fm,nmiss=nmiss,jump=sc,allmiss=missmark)
 }

@@ -7,4 +7,5 @@ Maintainer: <jjf23@bath.ac.uk>
 Description: Analyzes facial motion data files use shape data analysis methods
 License: GPL
 LazyData: TRUE
+Depends: shapes
 RoxygenNote: 5.0.1

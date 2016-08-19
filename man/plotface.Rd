@@ -2,13 +2,15 @@
 % Please edit documentation in R/facer.R
 \name{plotface}
 \alias{plotface}
-\title{Title}
+\title{Plot a face or a pair of faces}
 \usage{
 plotface(fm, mfconfig, fm2 = NULL, view = c("front", "side", "top"),
   num = TRUE, main = "", dirm = c("arrows", "points", "segments"))
 }
 \arguments{
 \item{fm}{A face matrix}
+
+\item{mfconfig}{motion capture config file}
 
 \item{fm2}{Another face matrix (optional)}
 
@@ -24,6 +26,6 @@ plotface(fm, mfconfig, fm2 = NULL, view = c("front", "side", "top"),
 nothing - a plot is constructed
 }
 \description{
-Title
+Plot a face or a pair of faces
 }
 
