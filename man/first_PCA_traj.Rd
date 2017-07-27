@@ -16,4 +16,3 @@ the initial frame, the the frame at the max, the geodesic initial frame and the 
 \description{
 extract the first PCA, select start and max, return initial and max frames
 }
-

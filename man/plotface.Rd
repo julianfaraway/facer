@@ -5,7 +5,8 @@
 \title{Plot a face or a pair of faces}
 \usage{
 plotface(fm, mfconfig, fm2 = NULL, view = c("front", "side", "top"),
-  num = TRUE, main = "", dirm = c("arrows", "points", "segments"))
+  num = TRUE, main = "", markerlabs = NULL, dirm = c("arrows", "points",
+  "segments"), subset = 1:nrow(fm))
 }
 \arguments{
 \item{fm}{A face matrix}
@@ -20,7 +21,11 @@ plotface(fm, mfconfig, fm2 = NULL, view = c("front", "side", "top"),
 
 \item{main}{option title}
 
+\item{markerlabs}{optional marker labels}
+
 \item{dirm}{when two faces are plotted, what should connect the corresponding markers}
+
+\item{subset}{of markers to be shown}
 }
 \value{
 nothing - a plot is constructed
@@ -28,4 +33,3 @@ nothing - a plot is constructed
 \description{
 Plot a face or a pair of faces
 }
-

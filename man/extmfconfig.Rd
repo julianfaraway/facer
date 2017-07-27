@@ -19,4 +19,3 @@ list containing number of frames, number of markers, names of the
 \description{
 Extract information about the motion capture file
 }
-

@@ -23,9 +23,8 @@ facemovie(shapem1, mfconfig, shapem2 = NULL, everynth = 6, adjust = TRUE,
 \item{header}{title displayed on movie}
 }
 \value{
-nothing - find movie file in "animations" directory
+nothing - find movie file in "animations" directory. Second sequence is in red
 }
 \description{
 Make a facial motion movie
 }
-

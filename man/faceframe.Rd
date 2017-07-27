@@ -24,4 +24,3 @@ nothing - a plot is created
 \description{
 Construct a single frame suitable for movie construction
 }
-

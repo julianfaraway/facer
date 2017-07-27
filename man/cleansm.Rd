@@ -13,9 +13,8 @@ cleansm(sm, MISSMAX = 50)
 }
 \value{
 a list containing a facial motion with missing values filled in, the number of
-missing cases in each marker, and the average jump in the marker for each frame
+missing cases in each marker, the max jump in a marker between frames
 }
 \description{
 Process a facial motion to fill-in missing values and report diagnostics
 }
-

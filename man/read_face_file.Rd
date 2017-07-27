@@ -19,4 +19,3 @@ a data matrix of the motion file
 \description{
 Read in a face file
 }
-

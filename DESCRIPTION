@@ -8,4 +8,4 @@ Description: Analyzes facial motion data files use shape data analysis methods
 License: GPL
 LazyData: TRUE
 Depends: shapes
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

@@ -17,4 +17,3 @@ A facial shape matrix rotated to have minimum variance in frontal and lateral di
 \description{
 Average faces and rotate so head is upright
 }
-

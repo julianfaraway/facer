@@ -9,10 +9,11 @@
 read_face_file <- function(fname,mfconfig,numskip=5){
   sm <- read.table(fname,skip=numskip,sep="\t",colClasses=rep("numeric",3*mfconfig$nmarkers+2),
                    flush=TRUE,fill=TRUE)[,3:(3*mfconfig$nmarkers+2)]
-  sm = data.matrix(sm)
-  shapex <- array(NA, dim = c(mfconfig$nmarkers, 3, mfconfig$nframes))
+  sm <-  data.matrix(sm)
+  nfr <- nrow(sm)
+  shapex <- array(NA, dim = c(mfconfig$nmarkers, 3, nfr))
 
-  for(i in 1:mfconfig$nframes){
+  for(i in 1:nfr){
     shapex[,,i] <- matrix(sm[i,],nrow=mfconfig$nmarkers, ncol=3,byrow=TRUE)
   }
   shapex
@@ -53,13 +54,15 @@ first_PCA_traj = function(sm){
 #' @param view direction of the 2D view
 #' @param num Marker numbers, rather than points, to be displayed
 #' @param main option title
+#' @param markerlabs optional marker labels
 #' @param dirm when two faces are plotted, what should connect the corresponding markers
+#' @param subset of markers to be shown
 #'
 #' @return nothing - a plot is constructed
 #' @export
 #'
-plotface <- function(fm,mfconfig,fm2=NULL,view=c("front","side","top"), num=TRUE, main="",
-                     dirm=c("arrows","points","segments")){
+plotface <- function(fm,mfconfig,fm2=NULL,view=c("front","side","top"), num=TRUE, main="",markerlabs=NULL,
+                     dirm=c("arrows","points","segments"),subset=1:nrow(fm)){
   n <- nrow(fm)
   dirm <- match.arg(dirm)
   view = match.arg(view)
@@ -75,6 +78,8 @@ plotface <- function(fm,mfconfig,fm2=NULL,view=c("front","side","top"), num=TRUE
     rightside = union(rightside, mfconfig$midline)
     selpts = rightside
   }
+  selpts = intersect(selpts,subset)
+  if(is.null(markerlabs)) markerlabs = as.character(1:n)
 
   afm <- rbind(fm[selpts,],fm2[selpts,])
   xr <- range(afm[,orthproj[1]])
@@ -87,7 +92,7 @@ plotface <- function(fm,mfconfig,fm2=NULL,view=c("front","side","top"), num=TRUE
   if(is.null(fm2)){
     if(num){
       plot(fm[selpts,orthproj[1]],fm[selpts,orthproj[2]],type="n",xlab="",ylab="",main=main,xlim=nxlim,ylim=nylim,asp=1)
-      text(fm[selpts,orthproj[1]],fm[selpts,orthproj[2]],as.character(selpts))
+      text(fm[selpts,orthproj[1]],fm[selpts,orthproj[2]],markerlabs[selpts])
     }else{
       plot(fm[selpts,orthproj[1]],fm[selpts,orthproj[2]],xlab="",ylab="",main=main,xlim=nxlim,ylim=nylim,asp=1)
     }
@@ -204,20 +209,26 @@ extmfconfig = function(fname, nskip=5){
 #' @param moviename name of the movie (default is "movie.mov")
 #' @param header title displayed on movie
 #'
-#' @return nothing - find movie file in "animations" directory
+#' @return nothing - find movie file in "animations" directory. Second sequence is in red
 #' @export
 facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,moviename="movie.mov",header=NULL){
 
-  nframes = mfconfig$nframes
-  if(!missing(shapem2)){ # if two motions, attempt to coordinate them
+  k <- mfconfig$nmarkers
+  m <- 3
+  nframes <- mfconfig$nframes
+
+  if(dim(shapem1)[1] != k) stop("Number of markers inconsistent")
+  if(dim(shapem1)[3] != nframes) stop("Number of frames inconsistent")
+
+  if(adjust & !missing(shapem2)){ # if two motions, attempt to coordinate them
     combf <- procGPA(abind(shapem1,shapem2))
     shapem1 <- combf$rotated[,,1:nframes]
     shapem2 <- combf$rotated[,,(nframes+1):(2*nframes)]
   }
 
-  k <- mfconfig$nmarkers
-  m <- 3
-  nframes <- mfconfig$nframes
+
+  if(!dir.exists("movpngs")) dir.create("movpngs")
+  if(!dir.exists("animations")) dir.create("animations")
 
   isel <- seq(1,nframes,by=everynth) # winnow frames
   animframes <- length(isel)
@@ -230,9 +241,9 @@ facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,movie
   }
 
   if(!is.null(shapem2)){
-    rangeinfo <- apply(abind(shapem1,shapem2),2,range)
+    rangeinfo <- apply(abind(shapem1,shapem2),2,range,na.rm=TRUE)
   }else{
-    rangeinfo = apply(shapem1,2,range)
+    rangeinfo = apply(shapem1,2,range,na.rm=TRUE)
   }
 
   maxrang <- max(rangeinfo[2,]-rangeinfo[1,])
@@ -242,7 +253,7 @@ facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,movie
     rangeinfo[2,i] <- rangeinfo[2,i]-adj
   }
 
-  system("rm -f movie/*")
+  system("rm -f movpngs/*")
 
   if(missing(header)){
     pnght <- 240
@@ -252,7 +263,7 @@ facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,movie
 
 
   for(i in 1:animframes){
-    png(filename=paste("movie/face",i+100,".png",sep=""),width=480,height=pnght)
+    png(filename=paste("movpngs/face",i+100,".png",sep=""),width=480,height=pnght)
     if(missing(shapem2)){
       faceframe(shapem1[,,i],mfconfig,rang=rangeinfo,header=header)
     }else{
@@ -264,7 +275,7 @@ facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,movie
   fps = animframes/(nframes/60)
 
   system(paste("rm -f animations/",moviename,sep=""))
-  system(paste("~/bin/crtimgseq.py animations/",moviename," 1 ",fps," movie/*",sep=""))
+  system(paste("~/bin/crtimgseq.py animations/",moviename," 1 ",fps," movpngs/*",sep=""))
 }
 
 #' Average faces and rotate so head is upright
@@ -360,3 +371,323 @@ cleansm = function(sm,MISSMAX=50){
   sc = max(apply(dm, 1, sum))/3
   list(sm=fm,nmiss=nmiss,jump=sc,allmiss=missmark)
 }
+
+#' Read in an LMK file
+#'
+#' @param filename - name of the file
+#'
+#' @return list containing the short labels, long labels and matrix of landmarks
+#' @export
+readlmk <- function(filename){
+  ff = readLines(filename,warn=FALSE)
+  n = length(ff)
+  ff = ff[-c(1,2,n-1,n)]
+  n=n-4
+
+  shortlab = as.character(1:n)
+  longlab = as.character(1:n)
+  cx = numeric(n)
+  cy = numeric(n)
+  cz = numeric(n)
+
+  Sys.setlocale('LC_ALL','C')
+
+  for(i in 1:n){
+    ll = strsplit(ff[[i]],"\"")[[1]]
+    nn = as.numeric(strsplit(ll[6]," ")[[1]])
+    shortlab[i] = ll[2]
+    longlab[i] = ll[4]
+    cx[i] = nn[1];cy[i]=nn[2];cz[i]=nn[3]
+  }
+  acp = !is.na(cx)
+  list(shortlab[acp],longlab[acp],facem=cbind(cx[acp],cy[acp],cz[acp]))
+
+}
+
+#' Array of faces constructed from geodesic and profile information
+#'
+#' @param initshap shape matrix with starting posture
+#' @param farshap shape matrix with extreme posture
+#' @param profile vector of value in [0,1] for convex combination of postures
+#'
+#' @return array where each frame is a shape matrix. Number of frames is the length of the profile vector.
+#' @export
+constructfaceseq <- function(initshap,farshap,prof){
+  ds <- dim(initshap)
+  fseq <- array(NA,c(ds[1],ds[2],length(prof)))
+  for(i in 1:length(prof)){
+    fseq[,,i] <- prof[i]*farshap+(1-prof[i])*initshap
+  }
+  fseq
+}
+
+#' Array of faces constructed from geodesic and score informationTitle
+#'
+#' @param initshap initial shape
+#' @param farshap extremal shape
+#' @param score score profile
+#'
+#' @return facial motion sequence with same number frames as the score
+#' @export
+constructscorefaceseq <- function(initshap,farshap,score){
+  ds <- dim(initshap)
+  fseq <- array(NA,c(ds[1],ds[2],length(score)))
+  ss <- score-min(score)
+  ss <- ss/max(ss)
+  for(i in seq_along(score)){
+    fseq[,,i] <- ss[i]*farshap+(1-ss[i])*initshap
+  }
+  fseq
+}
+
+
+#' Plot an array of shapes with a different color for each marker
+#'
+#' @param fm array markers by directions by cases
+#' @param mfconfig configuration information
+#' @param view front, side or top
+#' @param main optional title
+#'
+#' @return nothing
+#' @export
+multifaceplot <- function(fm, mfconfig, view=c("front","side","top"), main=NULL, subset=NULL){
+  mdim = dim(fm)
+  pcolors = sample(colors(distinct = TRUE),mdim[1])
+  view = match.arg(view)
+  orthproj = switch(view, "front" = mfconfig$coordir[c(1,2)],
+                    "side" = mfconfig$coordir[c(3,2)],
+                    "top" = mfconfig$coordir[c(1,3)])
+  alabs = switch(view, "front" = c("lateral","vertical"),
+                    "side" = c("forward","vertical"),
+                    "top" = c("lateral","forward"))
+  if(is.null(main)) main <- paste(view, "view")
+  if(is.null(subset)) subset = 1:mdim[1]
+
+  latdir = mfconfig$coordir[1]
+  if(latdir %in% orthproj){ # is lateral direction in selected view
+    selpts = 1:mdim[1]
+  }else{ # which markers are on the right
+    rightside = which(fm[,latdir,1] < mean(fm[mfconfig$midline,latdir,1]))
+    rightside = union(rightside, mfconfig$midline)
+    selpts = rightside
+  }
+  selpts = intersect(subset, selpts)
+
+  frame()
+  plot.window(range(fm[selpts,orthproj[1],]), range(fm[selpts,orthproj[2],]), asp=1)
+  title(main=main,xlab=alabs[1],ylab=alabs[2])
+  axis(1)
+  axis(2)
+  box()
+  for(i in selpts){
+    points(fm[i,orthproj[1],], fm[i,orthproj[2],],col=pcolors[i],pch=20)
+  }
+
+}
+
+#' Reflect face
+#'
+#' Reflect face by multiplying lateral direction by -1 and swapping the tags
+#' of paired markers
+#'
+#' This function will work best when the face is centered with zero on
+#' the midplane (lateral direction is tangent to this). But this is not
+#' essential as reflection will happen anyway although the face may need to
+#' be translated and/or rotated to match it up with the original face.
+#'
+#' @param sm face matrix
+#' @param mfconfig face config info including left right pairs
+#'
+#' @return a face matrix
+#' @export
+reflectface <- function(sm, mfconfig){
+  if(is.null(mfconfig$lrmat)) stop("Left Right pair matrix not defined")
+  lrmat = mfconfig$lrmat
+  nm = nrow(lrmat)
+  latdir = mfconfig$coordir[1]
+  midmn = abs(mean(sm[mfconfig$midline,latdir]))
+  dd = sm[mfconfig$lrmat[,1],latdir] - sm[mfconfig$lrmat[,2],latdir]
+  if(midmn > 0.1 * mean(abs(dd))) warning("Face may not be centered")
+  for(i in 1:nm){
+    x = sm[lrmat[i,1], latdir]
+    sm[lrmat[i,1],latdir] = -sm[lrmat[i,2],latdir]
+    sm[lrmat[i,2],latdir] = -x
+    x = sm[lrmat[i,1], -latdir]
+    sm[lrmat[i,1],-latdir] = sm[lrmat[i,2],-latdir]
+    sm[lrmat[i,2],-latdir] = x
+  }
+  sm[mfconfig$midline,latdir] = -sm[mfconfig$midline,latdir]
+  sm
+}
+
+#' Asymmetry scores
+#'
+#' Measures of asymmetry in object containing some matched pairs
+#'
+#' Face is reflected and the ordinary Procrustes applied to match up
+#' with distances calculated between markers
+#'
+#' @param sm a face matrix
+#' @param mfconfig face config info including left right pairs
+#'
+#' @return scores for each marker
+#' @export
+asymmetry <- function(sm, mfconfig){
+  if(is.null(mfconfig$lrmat)) stop("Left Right pair matrix not defined")
+  rsm = reflectface(sm, mfconfig)
+  opr = procOPA(sm, rsm, scale=FALSE)
+  apply(opr$A - opr$B,1,function(x) sqrt(sum(x^2)))
+}
+
+
+#' Location shift onto template
+#'
+#' Face is location-adjusted to make selected marker coincide with the template
+#'
+#' Usually do this with some (relatively) fixed landmark like the bridge of the nose
+#'
+#' @param templface the template face
+#' @param face the face to be adjusted
+#' @param marker the marker on the template to be used as the anchor
+#'
+#' @return the adjusted face
+#' @export
+bridgefix <- function(templface,face,marker=4){
+  nd <- face[4,]-templface[4,]
+  sweep(face,2,nd)
+}
+
+#' Compute size of face
+#'
+#' Average distance of markers from the origin
+#'
+#' Assumes the face has been centered
+#'
+#' @param f the face
+#'
+#' @return the size of the face
+#' @export
+facenorm <- function(f){
+  mean(sqrt(apply(f^2,1,sum)))
+}
+
+
+
+#' Array mean
+#' 
+#' computes array mean across the third dimension of an array
+#' 
+#' surprisingly faster than using apply because colMeans is fast
+#'
+#' @param A a 3D array
+#'
+#' @return a matrix with dimensions equal to the first two dimensions of A
+#' @export
+arraymean = function(A){
+  colMeans(aperm(A,c(3,1,2)))
+}
+
+#' Partial Procrustes rotation
+#' 
+#' rotates B onto A
+#' 
+#' Assumes that A and B have both been centered (and preferably scaled)
+#'
+#' @param A a face matrix
+#' @param B a face matrix
+#'
+#' @return the rotated B
+#' @export
+parproc = function(A,B){
+  k = ncol(A)
+  ABCP <- crossprod(A,B)
+  sv <- La.svd(ABCP,k,k)
+  sv$u[,k] <- sv$u[,k]*determinant(ABCP)$sign
+  B%*%tcrossprod(t(sv$vt),sv$u)
+}
+
+#' Ordinary Procrustes Analysis
+#' 
+#' Fit one face onto another
+#' 
+#' Face A is centered, Face B is centered then rotated to obtain the best Procrustes fit
+#'
+#' @param A a face matrix
+#' @param B another face matrix with the same dimension
+#'
+#' @return a list with the following components:
+#' \item{Ahat}{centered A}
+#' \item{Bhat}{B centered and rotated onto A}
+#' \item{OSS}{sum of squares for the difference}
+#' \item{rmsd}{RMS difference = sqrt(OSS/(no. of markers))}
+#' @export
+faceOPA = function(A,B){
+  csA = center.scale(A)
+  csB = center.scale(B)
+  Ahat = csA$coords * csA$CS
+  Bhat = parproc(csA$coords, csB$coords) * csB$CS
+  OSS = sum((Ahat-Bhat)^2)
+  rmsd = sqrt(OSS/nrow(A))
+  list(Ahat=Ahat,Bhat=Bhat,OSS=OSS,rmsd=rmsd)
+}
+
+#' Generalized Procrustes Analysis
+#'
+#' @param A a 3D array arranged as markers x dimensions x faces
+#' @param itmax maximum number of iterations (5 by default)
+#'
+#' @return a list containing the rotated array of faces, the mean face and the centroid sizes of the faces 
+#' @export
+faceGPA = function(A, itmax=5){
+  n = dim(A)[3]
+  size = rep(0,n)
+  prms = Inf
+  for(i in 1:n){
+    A[,,i] = center(A[,,i])
+    size[i] = csize(A[,,i])
+  }
+  for(j in 1:itmax){
+    for(i in 1:n){
+      mshape = arraymean(A[,,-i])
+      A[,,i] = parproc(mshape,A[,,i])
+    }
+    mshape = arraymean(A)
+    rmsd = sqrt(mean(apply(A,3,function(x) centroid.size(x-mshape)))/n)
+    if(prms - rmsd < 0.001) break
+    prms = rmsd
+  }
+  list(rotated=A, mshape=mshape, size=size)
+}
+
+# center
+# centers a matrix faster than scale()
+# used in other functions for gpagen; digitsurface
+center <- function(x){
+  if(is.vector(x)) x- mean(x) else {
+    x <- as.matrix(x)
+    x - rep(colMeans(x), rep.int(nrow(x), ncol(x)))
+  }
+}
+
+# helper functions
+
+# csize
+# calculates centroid size
+# digitsurface
+csize <- function(x) sqrt(sum(center(as.matrix(x))^2))
+
+# cs.scale
+# divide matrices by centroid size
+# used in other functions for gpagen
+cs.scale <- function(x) x/csize(x)
+
+# center.scale
+# center and divide matrices by centroid size; faster than scale()
+# used in other functions for gpagen
+center.scale <- function(x) {
+  x <- center(x)
+  cs <- sqrt(sum(x^2))
+  y <- x/cs
+  list(coords=y, CS=cs)
+}
+

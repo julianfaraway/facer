@@ -5,3 +5,8 @@
 tester.R
 animations
 movie
+.gitignore
+facer.Rproj
+.Rbuildignore
+.DS_Store
+inst/doc
