@@ -19,4 +19,3 @@ a face matrix
 \description{
 Rotate a face matrix in SD
 }
-
