@@ -5,7 +5,7 @@ by [Julian Faraway](http://people.bath.ac.uk/jjf23/)
 You can install it (provided you have loaded the `devtools` package) with:
 
 ```
-install_github("julianfaraway/brinla")
+install_github("julianfaraway/facer")
 ```
 
 The functions available are:
