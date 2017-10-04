@@ -221,7 +221,11 @@ facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,movie
   if(dim(shapem1)[3] != nframes) stop("Number of frames inconsistent")
 
   if(adjust & !missing(shapem2)){ # if two motions, attempt to coordinate them
+<<<<<<< HEAD
     combf <- faceGPA(abind(shapem1,shapem2))
+=======
+    combf <- procGPA(abind(shapem1,shapem2))
+>>>>>>> aedbe38327ba09fb32e39c20d70de339e499b31d
     shapem1 <- combf$rotated[,,1:nframes]
     shapem2 <- combf$rotated[,,(nframes+1):(2*nframes)]
   }
@@ -421,7 +425,11 @@ constructfaceseq <- function(initshap,farshap,prof){
   fseq
 }
 
+<<<<<<< HEAD
 #' Array of faces constructed from geodesic and score information
+=======
+#' Array of faces constructed from geodesic and score informationTitle
+>>>>>>> aedbe38327ba09fb32e39c20d70de339e499b31d
 #'
 #' @param initshap initial shape
 #' @param farshap extremal shape
@@ -569,7 +577,11 @@ makesym <- function(sm, mfconfig){
 #' @return the adjusted face
 #' @export
 bridgefix <- function(templface,face,marker=4){
+<<<<<<< HEAD
   nd <- face[marker,]-templface[marker,]
+=======
+  nd <- face[4,]-templface[4,]
+>>>>>>> aedbe38327ba09fb32e39c20d70de339e499b31d
   sweep(face,2,nd)
 }
 
@@ -580,20 +592,34 @@ bridgefix <- function(templface,face,marker=4){
 #' Assumes the face has been centered
 #'
 #' @param f the face
+<<<<<<< HEAD
 #' @param subset of markers to be considerd
 #'
 #' @return the size of the face
 #' @export
 facenorm <- function(f,subset=1:nrow(f)){
   mean(sqrt(apply(f[subset,]^2,1,sum)))
+=======
+#'
+#' @return the size of the face
+#' @export
+facenorm <- function(f){
+  mean(sqrt(apply(f^2,1,sum)))
+>>>>>>> aedbe38327ba09fb32e39c20d70de339e499b31d
 }
 
 
 
 #' Array mean
+<<<<<<< HEAD
 #'
 #' computes array mean across the third dimension of an array
 #'
+=======
+#'
+#' computes array mean across the third dimension of an array
+#'
+>>>>>>> aedbe38327ba09fb32e39c20d70de339e499b31d
 #' surprisingly faster than using apply because colMeans is fast
 #'
 #' @param A a 3D array
@@ -605,9 +631,15 @@ arraymean = function(A){
 }
 
 #' Partial Procrustes rotation
+<<<<<<< HEAD
 #'
 #' rotates B onto A
 #'
+=======
+#'
+#' rotates B onto A
+#'
+>>>>>>> aedbe38327ba09fb32e39c20d70de339e499b31d
 #' Assumes that A and B have both been centered (and preferably scaled)
 #'
 #' @param A a face matrix
@@ -624,9 +656,15 @@ parproc = function(A,B){
 }
 
 #' Ordinary Procrustes Analysis
+<<<<<<< HEAD
 #'
 #' Fit one face onto another
 #'
+=======
+#'
+#' Fit one face onto another
+#'
+>>>>>>> aedbe38327ba09fb32e39c20d70de339e499b31d
 #' Face A is centered, Face B is centered then rotated to obtain the best Procrustes fit
 #'
 #' @param A a face matrix
@@ -653,9 +691,15 @@ faceOPA = function(A,B){
 #' @param A a 3D array arranged as markers x dimensions x faces
 #' @param itmax maximum number of iterations (5 by default)
 #'
+<<<<<<< HEAD
 #' @return a list containing the rotated array of faces, the mean face and the centroid sizes of the faces
 #' @export
 faceGPA = function(A, itmax=5, pcaoutput=FALSE){
+=======
+#' @return a list containing the rotated array of faces, the mean face and the centroid sizes of the faces
+#' @export
+faceGPA = function(A, itmax=5){
+>>>>>>> aedbe38327ba09fb32e39c20d70de339e499b31d
   n = dim(A)[3]
   size = rep(0,n)
   prms = Inf
@@ -673,6 +717,7 @@ faceGPA = function(A, itmax=5, pcaoutput=FALSE){
     if(prms - rmsd < 0.001) break
     prms = rmsd
   }
+<<<<<<< HEAD
   if(pcaoutput){
     flatrot = t(apply(A,3,as.numeric))
     pcx = prcomp(flatrot)
@@ -680,6 +725,9 @@ faceGPA = function(A, itmax=5, pcaoutput=FALSE){
     pcx = list(x=NA,sdev=NA,rotation=NA)
   }
   list(rotated=A, mshape=mshape, size=size, pcasd=pcx$sdev, scores=pcx$x, pcar=pcx$rotation)
+=======
+  list(rotated=A, mshape=mshape, size=size)
+>>>>>>> aedbe38327ba09fb32e39c20d70de339e499b31d
 }
 
 # center
