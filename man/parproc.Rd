@@ -18,5 +18,7 @@ the rotated B
 rotates B onto A
 }
 \details{
+rotates B onto A
+
 Assumes that A and B have both been centered (and preferably scaled)
 }

@@ -4,7 +4,7 @@
 \alias{faceGPA}
 \title{Generalized Procrustes Analysis}
 \usage{
-faceGPA(A, itmax = 5)
+faceGPA(A, itmax = 5, pcaoutput = FALSE)
 }
 \arguments{
 \item{A}{a 3D array arranged as markers x dimensions x faces}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/facer.R
 \name{constructscorefaceseq}
 \alias{constructscorefaceseq}
-\title{Array of faces constructed from geodesic and score informationTitle}
+\title{Array of faces constructed from geodesic and score information}
 \usage{
 constructscorefaceseq(initshap, farshap, score)
 }
@@ -17,5 +17,5 @@ constructscorefaceseq(initshap, farshap, score)
 facial motion sequence with same number frames as the score
 }
 \description{
-Array of faces constructed from geodesic and score informationTitle
+Array of faces constructed from geodesic and score information
 }

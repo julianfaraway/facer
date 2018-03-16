@@ -5,7 +5,7 @@
 \title{Make a facial motion movie}
 \usage{
 facemovie(shapem1, mfconfig, shapem2 = NULL, everynth = 6, adjust = TRUE,
-  moviename = "movie.mov", header = NULL)
+  moviename = "movie.mov", header = NULL, missmat = NULL)
 }
 \arguments{
 \item{shapem1}{A shape motion}
@@ -21,6 +21,8 @@ facemovie(shapem1, mfconfig, shapem2 = NULL, everynth = 6, adjust = TRUE,
 \item{moviename}{name of the movie (default is "movie.mov")}
 
 \item{header}{title displayed on movie}
+
+\item{missmat}{0/1 nframes by nmarkers matrix with 1's for missing values}
 }
 \value{
 nothing - find movie file in "animations" directory. Second sequence is in red

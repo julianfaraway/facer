@@ -128,8 +128,13 @@ faceframe <- function(fc1,mfconfig,fc2=NULL,rang=NULL,box=FALSE,header=FALSE){
   vertdir = mfconfig$coordir[2]
   frontdir = mfconfig$coordir[3]
 
-  rightside = which(fc1[,latdir] < mean(fc1[mfconfig$midline,latdir]))
-  leftside = setdiff(1:n, rightside)
+  if(is.null(mfconfig$lrmat)){
+    rightside = which(fc1[,latdir] < mean(fc1[mfconfig$midline,latdir]))
+    leftside = setdiff(1:n, rightside)
+  }else{
+    rightside = mfconfig$lrmat[,1]
+    leftside = mfconfig$lrmat[,2]
+  }
   rightside = union(rightside, mfconfig$midline)
   leftside = union(leftside, mfconfig$midline)
 
@@ -208,10 +213,11 @@ extmfconfig = function(fname, nskip=5){
 #' @param adjust adjust second motion to start from same place as first motion
 #' @param moviename name of the movie (default is "movie.mov")
 #' @param header title displayed on movie
+#' @param missmat 0/1 nframes by nmarkers matrix with 1's for missing values
 #'
 #' @return nothing - find movie file in "animations" directory. Second sequence is in red
 #' @export
-facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,moviename="movie.mov",header=NULL){
+facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,moviename="movie.mov",header=NULL,missmat=NULL){
 
   k <- mfconfig$nmarkers
   m <- 3
@@ -234,6 +240,7 @@ facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,movie
   animframes <- length(isel)
   shapem1 <- shapem1[,,isel]
   if(!is.null(shapem2)) shapem2 <- shapem2[,,isel]
+  if(!is.null(missmat)) missmat = missmat[isel,]
 
   if(adjust & !is.null(shapem2)){ # adjust to start from same spot
     adjm <- (shapem2[,,1] - shapem1[,,1])
@@ -264,6 +271,9 @@ facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,movie
 
   for(i in 1:animframes){
     png(filename=paste("movpngs/face",i+100,".png",sep=""),width=480,height=pnght)
+    if(!is.null(missmat)){
+      shapem1[missmat[i,]==1,,i] = NA
+    }
     if(missing(shapem2)){
       faceframe(shapem1[,,i],mfconfig,rang=rangeinfo,header=header)
     }else{
@@ -276,6 +286,8 @@ facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,movie
 
   system(paste("rm -f animations/",moviename,sep=""))
   system(paste("~/bin/crtimgseq.py animations/",moviename," 1 ",fps," movpngs/*",sep=""))
+  system("rm -f movpngs/*")
+
 }
 
 #' Average faces and rotate so head is upright
@@ -357,10 +369,12 @@ misfixlin <- function(x){
 #' @param MISSMAX maximum allowable number of missing cases in a marker (default=50)
 #'
 #' @return a list containing a facial motion with missing values filled in, the number of
-#' missing cases in each marker, the max jump in a marker between frames
+#' missing cases in each marker, the max jump in a marker between frames, which cases
+#' are all missing and a matrix of where the missing values occur
 #' @export
 cleansm = function(sm,MISSMAX=50){
-  nmiss = apply(sm,1,function(x) sum(is.na(x)))/3
+  missmat = t(apply(sm,c(1,3),function(x) sum(is.na(x)))/3)
+  nmiss = colSums(missmat)
   nobs = dim(sm)[3]
   missmark = which(nmiss == nobs)
   if(any(nmiss > MISSMAX)){
@@ -369,7 +383,7 @@ cleansm = function(sm,MISSMAX=50){
   fm = aperm(apply(sm,c(1,2),misfixlin),c(2,3,1))
   dm = abs(fm[,,-nobs] - fm[,,-1])
   sc = max(apply(dm, 1, sum))/3
-  list(sm=fm,nmiss=nmiss,jump=sc,allmiss=missmark)
+  list(sm=fm,nmiss=nmiss,jump=sc,allmiss=missmark,missmat=missmat)
 }
 
 #' Read in an LMK file
@@ -452,7 +466,8 @@ constructscorefaceseq <- function(initshap,farshap,score){
 #' @export
 multifaceplot <- function(fm, mfconfig, view=c("front","side","top"), main=NULL, subset=NULL){
   mdim = dim(fm)
-  pcolors = sample(colors(distinct = TRUE),mdim[1])
+ # pcolors = sample(colors(distinct = TRUE),mdim[1])
+  pcolors = sample(rainbow(mdim[1]))
   view = match.arg(view)
   orthproj = switch(view, "front" = mfconfig$coordir[c(1,2)],
                     "side" = mfconfig$coordir[c(3,2)],
@@ -474,7 +489,7 @@ multifaceplot <- function(fm, mfconfig, view=c("front","side","top"), main=NULL,
   selpts = intersect(subset, selpts)
 
   frame()
-  plot.window(range(fm[selpts,orthproj[1],]), range(fm[selpts,orthproj[2],]), asp=1)
+  plot.window(range(fm[selpts,orthproj[1],],na.rm=TRUE), range(fm[selpts,orthproj[2],],na.rm=TRUE), asp=1)
   title(main=main,xlab=alabs[1],ylab=alabs[2])
   axis(1)
   axis(2)
@@ -632,8 +647,8 @@ parproc = function(A,B){
 #'
 #' Face A is centered, Face B is centered then rotated to obtain the best Procrustes fit
 #'
-#' @param A a face matrix
-#' @param B another face matrix with the same dimension
+#' @param A a face matrix (no missing values allowed)
+#' @param B another face matrix with the same dimension (missing values allowed)
 #'
 #' @return a list with the following components:
 #' \item{Ahat}{centered A}
@@ -642,12 +657,27 @@ parproc = function(A,B){
 #' \item{rmsd}{RMS difference = sqrt(OSS/(no. of markers))}
 #' @export
 faceOPA = function(A,B){
+  if(any(is.na(A))) stop("Missing values in first argument")
+  missrow = apply(B,1,function(x) any(is.na(x)))
+  adim = dim(A)
+  if(any(missrow)){
+    A = A[!missrow,]
+    B = B[!missrow,]
+  }
   csA = center.scale(A)
   csB = center.scale(B)
   Ahat = csA$coords * csA$CS
   Bhat = parproc(csA$coords, csB$coords) * csB$CS
   OSS = sum((Ahat-Bhat)^2)
   rmsd = sqrt(OSS/nrow(A))
+  if(any(missrow)){
+    Afull = matrix(NA,adim[1],adim[2])
+    Afull[!missrow] = Ahat
+    Ahat = Afull
+    Bfull = matrix(NA,adim[1],adim[2])
+    Bfull[!missrow] = Bhat
+    Bhat = Bfull
+  }
   list(Ahat=Ahat,Bhat=Bhat,OSS=OSS,rmsd=rmsd)
 }
 

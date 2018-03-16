@@ -4,10 +4,12 @@
 \alias{facenorm}
 \title{Compute size of face}
 \usage{
-facenorm(f)
+facenorm(f, subset = 1:nrow(f))
 }
 \arguments{
 \item{f}{the face}
+
+\item{subset}{of markers to be considerd}
 }
 \value{
 the size of the face
