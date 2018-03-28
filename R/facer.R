@@ -82,8 +82,8 @@ plotface <- function(fm,mfconfig,fm2=NULL,view=c("front","side","top"), num=TRUE
   if(is.null(markerlabs)) markerlabs = as.character(1:n)
 
   afm <- rbind(fm[selpts,],fm2[selpts,])
-  xr <- range(afm[,orthproj[1]])
-  yr <- range(afm[,orthproj[2]])
+  xr <- range(afm[,orthproj[1]],na.rm=TRUE)
+  yr <- range(afm[,orthproj[2]],na.rm=TRUE)
 
   maxsp <- max(diff(xr),diff(yr))
   nxlim <- mean(xr)+c(-1,1)*0.5*maxsp
@@ -655,12 +655,14 @@ parproc = function(A,B){
 #' \item{Bhat}{B centered and rotated onto A}
 #' \item{OSS}{sum of squares for the difference}
 #' \item{rmsd}{RMS difference = sqrt(OSS/(no. of markers))}
+#' \item{mss}{square distance per marker}
 #' @export
 faceOPA = function(A,B){
   if(any(is.na(A))) stop("Missing values in first argument")
   missrow = apply(B,1,function(x) any(is.na(x)))
   adim = dim(A)
   if(any(missrow)){
+    Aorig = A
     A = A[!missrow,]
     B = B[!missrow,]
   }
@@ -668,17 +670,20 @@ faceOPA = function(A,B){
   csB = center.scale(B)
   Ahat = csA$coords * csA$CS
   Bhat = parproc(csA$coords, csB$coords) * csB$CS
-  OSS = sum((Ahat-Bhat)^2)
-  rmsd = sqrt(OSS/nrow(A))
   if(any(missrow)){
     Afull = matrix(NA,adim[1],adim[2])
     Afull[!missrow] = Ahat
-    Ahat = Afull
+    Adiff = Afull - Aorig
+    Ahat = Aorig
     Bfull = matrix(NA,adim[1],adim[2])
     Bfull[!missrow] = Bhat
-    Bhat = Bfull
+    Bhat = Bfull - Adiff
   }
-  list(Ahat=Ahat,Bhat=Bhat,OSS=OSS,rmsd=rmsd)
+  mss = apply(Ahat - Bhat, 1,function(x) sum(x^2))
+  OSS = sum(mss,na.rm=TRUE)
+  rmsd = sqrt(OSS/sum(!missrow))
+
+  list(Ahat=Ahat,Bhat=Bhat,OSS=OSS,rmsd=rmsd,mss=mss)
 }
 
 #' Generalized Procrustes Analysis
@@ -714,6 +719,41 @@ faceGPA = function(A, itmax=5, pcaoutput=FALSE){
   }
   list(rotated=A, mshape=mshape, size=size, pcasd=pcx$sdev, scores=pcx$x, pcar=pcx$rotation)
 }
+
+#' Conform a trajectory to a template
+#'
+#' @param sm The motion data array (may contain missing values)
+#' @param mfi template shape (no missing values allowed)
+#'
+#' @return a list with the following components:
+#' \item{sm}{conformed trajectory}
+#' \item{dm}{matrix of squared distances to the template by frame and by marker}
+#' \item{rawstart}{the initial frame}
+#' \item{rawext}{the extreme frame}
+#' @export
+trajtemplate = function(sm, mfi){
+  if(any(is.na(mfi))) stop("Missing values in the template shape")
+
+  dm = matrix(NA, dim(sm)[3], dim(sm)[1])
+  for(i in 1:dim(sm)[3]){
+    ft = faceOPA(mfi, sm[,,i])
+    sm[,,i] = ft$Bhat
+    dm[i,] = ft$mss
+  }
+  dmf = apply(dm,2,medianfill)
+  distem = apply(dmf,1,function(x) sqrt(sum(x,na.rm=TRUE)))
+  maxi = which.max(distem)
+  list(sm=sm,dm=dm,distem=distem,rawstart=sm[,,1],rawext=sm[,,maxi])
+}
+
+# median fill
+
+medianfill = function(x){
+  md = median(x,na.rm=TRUE)
+  x[is.na(x)] = md
+  x
+}
+
 
 # center
 # centers a matrix faster than scale()

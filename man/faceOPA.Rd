@@ -7,9 +7,9 @@
 faceOPA(A, B)
 }
 \arguments{
-\item{A}{a face matrix}
+\item{A}{a face matrix (no missing values allowed)}
 
-\item{B}{another face matrix with the same dimension}
+\item{B}{another face matrix with the same dimension (missing values allowed)}
 }
 \value{
 a list with the following components:
@@ -17,6 +17,7 @@ a list with the following components:
 \item{Bhat}{B centered and rotated onto A}
 \item{OSS}{sum of squares for the difference}
 \item{rmsd}{RMS difference = sqrt(OSS/(no. of markers))}
+\item{mss}{square distance per marker}
 }
 \description{
 Fit one face onto another
