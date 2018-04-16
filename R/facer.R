@@ -61,24 +61,34 @@ first_PCA_traj = function(sm){
 #' @return nothing - a plot is constructed
 #' @export
 #'
-plotface <- function(fm,mfconfig,fm2=NULL,view=c("front","side","top"), num=TRUE, main="",markerlabs=NULL,
+plotface <- function(fm,mfconfig,fm2=NULL,view=c("front","side","lside","top","rside"), num=TRUE, main="",markerlabs=NULL,
                      dirm=c("arrows","points","segments"),subset=1:nrow(fm)){
   n <- nrow(fm)
   dirm <- match.arg(dirm)
   view = match.arg(view)
   orthproj = switch(view, "front" = mfconfig$coordir[c(1,2)],
                           "side" = mfconfig$coordir[c(3,2)],
+                          "lside" = mfconfig$coordir[c(3,2)],
+                          "rside" = mfconfig$coordir[c(3,2)],
                           "top" = mfconfig$coordir[c(1,3)])
 
   latdir = mfconfig$coordir[1]
-  if(latdir %in% orthproj){ # is lateral direction in selected view
-    selpts = 1:n
-  }else{ # which markers are on the right
+  if(is.null(mfconfig$lrmat)){
     rightside = which(fm[,latdir] < mean(fm[mfconfig$midline,latdir]))
-    rightside = union(rightside, mfconfig$midline)
-    selpts = rightside
+    leftside = setdiff(1:n, rightside)
+  }else{
+    rightside = mfconfig$lrmat[,2]
+    leftside = mfconfig$lrmat[,1]
   }
-  selpts = intersect(selpts,subset)
+  rightside = union(rightside, mfconfig$midline)
+  leftside = union(leftside, mfconfig$midline)
+
+  selpts = switch(view, "front" = 1:n,
+                    "side" = rightside,
+                    "lside" = leftside,
+                    "rside" = rightside,
+                    "top" = 1:n)
+
   if(is.null(markerlabs)) markerlabs = as.character(1:n)
 
   afm <- rbind(fm[selpts,],fm2[selpts,])
@@ -132,8 +142,8 @@ faceframe <- function(fc1,mfconfig,fc2=NULL,rang=NULL,box=FALSE,header=FALSE){
     rightside = which(fc1[,latdir] < mean(fc1[mfconfig$midline,latdir]))
     leftside = setdiff(1:n, rightside)
   }else{
-    rightside = mfconfig$lrmat[,1]
-    leftside = mfconfig$lrmat[,2]
+    rightside = mfconfig$lrmat[,2]
+    leftside = mfconfig$lrmat[,1]
   }
   rightside = union(rightside, mfconfig$midline)
   leftside = union(leftside, mfconfig$midline)
