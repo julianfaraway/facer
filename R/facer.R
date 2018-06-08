@@ -33,7 +33,7 @@ first_PCA_traj = function(sm){
   k <- dimsm[1]
   m <- dimsm[2]
 
-  spca <- try(procGPA(sm, scale=TRUE, distances=FALSE))
+  spca <- try(shapes::procGPA(sm, scale=TRUE, distances=FALSE))
   score1 = spca$scores[,1]
   if(score1[1] > 0) score1 = -score1
   framemax = which.max(score1)
@@ -97,6 +97,7 @@ plotface <- function(fm,mfconfig,fm2=NULL,view=c("front","side","lside","top","r
 
   maxsp <- max(diff(xr),diff(yr))
   nxlim <- mean(xr)+c(-1,1)*0.5*maxsp
+  if(view %in% c("side","rside")) nxlim = mean(xr)+c(1,-1)*0.5*maxsp # mirror if right side view
   nylim <- mean(yr)+c(-1,1)*0.5*maxsp
 
   if(is.null(fm2)){
@@ -231,10 +232,12 @@ facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,movie
 
   k <- mfconfig$nmarkers
   m <- 3
-  nframes <- mfconfig$nframes
+  nframes <- dim(shapem1)[3]
 
   if(dim(shapem1)[1] != k) stop("Number of markers inconsistent")
-  if(dim(shapem1)[3] != nframes) stop("Number of frames inconsistent")
+  if(!is.null(shapem2)){
+    if(dim(shapem2)[3] != nframes) stop("Number of frames inconsistent")
+  }
 
   if(adjust & !missing(shapem2)){ # if two motions, attempt to coordinate them
     combf <- faceGPA(abind(shapem1,shapem2))
@@ -311,7 +314,7 @@ averecface = function(shapem, mconfig){
   latdir = mfconfig$coordir[1]
   vertdir = mfconfig$coordir[2]
   frontdir = mfconfig$coordir[3]
-  mshape = procGPA(shapem, pcaoutput = FALSE, distances = FALSE)$mshape
+  mshape = shapes::procGPA(shapem, pcaoutput = FALSE, distances = FALSE)$mshape
   # rotate in the saggital plane
   aseq = seq(-pi/4, pi/4, length=1000)
   sdv = numeric(length(aseq))
@@ -560,7 +563,7 @@ reflectface <- function(sm, mfconfig){
 asymmetry <- function(sm, mfconfig){
   if(is.null(mfconfig$lrmat)) stop("Left Right pair matrix not defined")
   rsm = reflectface(sm, mfconfig)
-  opr = faceOPA(sm, rsm, scale=FALSE)
+  opr = faceOPA(sm, rsm)
   apply(opr$Ahat - opr$Bhat,1,function(x) sqrt(sum(x^2)))
 }
 
