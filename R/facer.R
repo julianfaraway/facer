@@ -298,7 +298,7 @@ facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,movie
   fps = animframes/(nframes/60)
 
   system(paste("rm -f animations/",moviename,sep=""))
-  system(paste0("ffmpeg -start_number 101 -framerate ",fps," -i movpngs/face%03d.png -codec png animations",moviename))
+  system(paste0("ffmpeg -start_number 101 -framerate ",fps," -i movpngs/face%03d.png -codec png animations/",moviename))
 #  system(paste("~/bin/crtimgseq.py animations/",moviename," 1 ",fps," movpngs/*",sep=""))
   system("rm -f movpngs/*")
 
