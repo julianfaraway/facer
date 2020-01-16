@@ -298,7 +298,8 @@ facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,movie
   fps = animframes/(nframes/60)
 
   system(paste("rm -f animations/",moviename,sep=""))
-  system(paste("~/bin/crtimgseq.py animations/",moviename," 1 ",fps," movpngs/*",sep=""))
+  system(paste0("ffmpeg -start_number 101 -framerate ",fps," -i movpngs/face%03d.png -codec png animations",moviename))
+#  system(paste("~/bin/crtimgseq.py animations/",moviename," 1 ",fps," movpngs/*",sep=""))
   system("rm -f movpngs/*")
 
 }
@@ -720,7 +721,7 @@ faceGPA = function(A, itmax=5, pcaoutput=FALSE){
       A[,,i] = parproc(mshape,A[,,i])
     }
     mshape = arraymean(A)
-    rmsd = sqrt(mean(apply(A,3,function(x) centroid.size(x-mshape)))/n)
+    rmsd = sqrt(mean(apply(A,3,function(x) csize(x-mshape)))/n)
     if(prms - rmsd < 0.001) break
     prms = rmsd
   }
@@ -798,5 +799,28 @@ center.scale <- function(x) {
   cs <- sqrt(sum(x^2))
   y <- x/cs
   list(coords=y, CS=cs)
+}
+
+# taken from the shapes library
+abind = function (X1, X2)
+{
+  k <- dim(X1)[1]
+  m <- dim(X1)[2]
+  if (is.matrix(X1)) {
+    tem <- array(0, c(k, m, 1))
+    tem[, , 1] <- X1
+    X1 <- tem
+  }
+  if (is.matrix(X2)) {
+    tem <- array(0, c(k, m, 1))
+    tem[, , 1] <- X2
+    X2 <- tem
+  }
+  n1 <- dim(X1)[3]
+  n2 <- dim(X2)[3]
+  Y <- array(0, c(k, m, n1 + n2))
+  Y[, , 1:n1] <- X1
+  Y[, , (n1 + 1):(n1 + n2)] <- X2
+  Y
 }
 
