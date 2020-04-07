@@ -217,6 +217,8 @@ extmfconfig = function(fname, nskip=5){
 
 #' Make a facial motion movie
 #'
+#' Requires availability of the convert function from Imagemagick
+#'
 #' @param shapem1 A shape motion
 #' @param mfconfig motion config
 #' @param shapem2 another shape motion (optional)
@@ -281,10 +283,10 @@ facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,movie
     pnght <- 270
   }
 
-
+  mag = 2 # magnification for the still frames
   for(i in 1:animframes){
-    png(filename=paste("movpngs/face",i+100,".png",sep=""),width=480,height=pnght)
-    if(!is.null(missmat)){
+    png(filename=paste("movpngs/face",i+100,".png",sep=""),width=480*mag,height=pnght*mag, pointsize = 20)
+     if(!is.null(missmat)){
       shapem1[missmat[i,]==1,,i] = NA
     }
     if(missing(shapem2)){
@@ -298,7 +300,8 @@ facemovie <- function(shapem1,mfconfig,shapem2=NULL,everynth=6,adjust=TRUE,movie
   fps = animframes/(nframes/60)
 
   system(paste("rm -f animations/",moviename,sep=""))
-  system(paste0("ffmpeg -start_number 101 -framerate ",fps," -i movpngs/face%03d.png -codec png animations/",moviename))
+  system(paste0("convert -delay ",fps-1," movpngs/face*.png animations/",moviename))
+#  system(paste0("ffmpeg -start_number 101 -framerate ",fps," -i movpngs/face%03d.png -codec png animations/",moviename))
 #  system(paste("~/bin/crtimgseq.py animations/",moviename," 1 ",fps," movpngs/*",sep=""))
   system("rm -f movpngs/*")
 
