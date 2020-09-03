@@ -33,7 +33,8 @@ first_PCA_traj = function(sm){
   k <- dimsm[1]
   m <- dimsm[2]
 
-  spca <- try(shapes::procGPA(sm, scale=TRUE, distances=FALSE))
+#  spca <- try(shapes::procGPA(sm, scale=TRUE, distances=FALSE))
+  spca = try(faceGPA(sm, pcaoutput = TRUE))
   score1 = spca$scores[,1]
   if(score1[1] > 0) score1 = -score1
   framemax = which.max(score1)
@@ -318,7 +319,7 @@ averecface = function(shapem, mconfig){
   latdir = mfconfig$coordir[1]
   vertdir = mfconfig$coordir[2]
   frontdir = mfconfig$coordir[3]
-  mshape = shapes::procGPA(shapem, pcaoutput = FALSE, distances = FALSE)$mshape
+  mshape = faceGPA(shapem, pcaoutput = FALSE)$mshape
   # rotate in the saggital plane
   aseq = seq(-pi/4, pi/4, length=1000)
   sdv = numeric(length(aseq))
