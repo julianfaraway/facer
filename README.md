@@ -23,11 +23,12 @@ extmfconfig                         Extract information about the motion capture
 faceGPA                             Generalized Procrustes Analysis
 faceOPA                             Ordinary Procrustes Analysis
 faceframe                           Construct a single frame suitable for movie construction
+faceimpute                          Impute missing values in a face matrix  
 facemovie                           Make a facial motion movie
 facenorm                            Compute size of face
 first_PCA_traj                      extract the first PCA, select start and max, return initial and max
                                     frames
-misfixlin                           Fill in missing values using linear interpolation
+misfixlin                           Fill in missing values in a vector using linear interpolation
 multifaceplot                       Plot an array of shapes with a different color for each marker
 parproc                             Partial Procrustes rotation
 plotface                            Plot a face or a pair of faces
