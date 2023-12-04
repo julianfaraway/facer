@@ -4,7 +4,7 @@
 \alias{bridgefix}
 \title{Location shift onto template}
 \usage{
-bridgefix(templface, face, marker = 4)
+bridgefix(templface, face, marker = 4, meanfix = FALSE)
 }
 \arguments{
 \item{templface}{the template face}
@@ -12,6 +12,8 @@ bridgefix(templface, face, marker = 4)
 \item{face}{the face to be adjusted}
 
 \item{marker}{the marker on the template to be used as the anchor}
+
+\item{meanfix}{logical indicating whether to use the mean rather than a specific marker.}
 }
 \value{
 the adjusted face

@@ -4,8 +4,13 @@
 \alias{multifaceplot}
 \title{Plot an array of shapes with a different color for each marker}
 \usage{
-multifaceplot(fm, mfconfig, view = c("front", "side", "top"), main = NULL,
-  subset = NULL)
+multifaceplot(
+  fm,
+  mfconfig,
+  view = c("front", "side", "top"),
+  main = NULL,
+  subset = NULL
+)
 }
 \arguments{
 \item{fm}{array markers by directions by cases}

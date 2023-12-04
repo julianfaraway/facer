@@ -598,12 +598,25 @@ makesym <- function(sm, mfconfig){
 #' @param templface the template face
 #' @param face the face to be adjusted
 #' @param marker the marker on the template to be used as the anchor
+#' @param meanfix logical indicating whether to use the mean rather than a specific marker.
+#'
 #'
 #' @return the adjusted face
 #' @export
-bridgefix <- function(templface,face,marker=4){
-  nd <- face[marker,]-templface[marker,]
-  sweep(face,2,nd)
+bridgefix = function(templface, face, marker = 4, meanfix = FALSE){
+  # templface is the template face file
+  # face is the face file to be registered
+  # marker is the marker to be used for registration
+  # meanfix is a logical value indicating whether to fix using the mean rather than a specific marker
+  if(meanfix){
+    nd <- colMeans(face,na.rm = TRUE) - colMeans(templface,na.rm = TRUE)
+    face = sweep(face, 2, nd)
+  }
+  else{
+    nd <- face[marker, ] - templface[marker, ]
+    face = sweep(face, 2, nd)
+  }
+  face
 }
 
 #' Compute size of face
@@ -764,7 +777,46 @@ trajtemplate = function(sm, mfi){
   list(sm=sm,dm=dm,distem=distem,rawstart=sm[,,1],rawext=sm[,,maxi])
 }
 
-# median fill
+#' Impute missing values in a face file
+#'
+#' @param mface a face file with missing values
+#' @param tface a face file for training
+#' @param verbose logical value indicating whether to print out missing value info
+#'
+#' @return a face file with missing values imputed
+#' @export
+faceimpute = function(mface, tface, verbose=FALSE){
+  if(dim(mface)[1] != dim(tface)[1]) stop("Number of markers in mface and tface do not match")
+  if(dim(mface)[3] > dim(tface)[3]) stop("Number of frames in mface is greater than tface")
+  missmatrix = is.na(mface[,1,])
+  missframes = apply(missmatrix, 2, sum)
+  missmark = apply(missmatrix,1,mean)
+  imissmark = which(missmark > 0)
+  if(verbose){
+    cat("Number of frames with missing values:",
+        sum(missframes > 0), "out of",
+        ncol(missmatrix),
+        "\n")
+    cat("Markers with missing values:", imissmark, "\n")
+    cat("Markers with all missing values:", which(missmark == 1), "\n")
+    cat("Number of missing values in training set:",
+        sum(is.na(tface[,1,])), "(",
+        mean(is.na(tface[,1,]))*100,"%)",
+        "\n")
+  }
+  for(imark in imissmark){
+    for(idim in 1:3){
+      y = tface[imark,idim,]
+      X = t(tface[-imissmark,idim,])
+      lmod = lm(y ~ X-1, na.action = na.exclude)
+      newX = t(mface[-imissmark,idim,])
+      px = newX %*% lmod$coefficients
+      mface[imark,idim,] = px
+    }
+  }
+  mface
+}
+
 
 medianfill = function(x){
   md = median(x,na.rm=TRUE)

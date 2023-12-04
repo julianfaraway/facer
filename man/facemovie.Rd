@@ -4,8 +4,16 @@
 \alias{facemovie}
 \title{Make a facial motion movie}
 \usage{
-facemovie(shapem1, mfconfig, shapem2 = NULL, everynth = 6, adjust = TRUE,
-  moviename = "movie.mov", header = NULL, missmat = NULL)
+facemovie(
+  shapem1,
+  mfconfig,
+  shapem2 = NULL,
+  everynth = 6,
+  adjust = TRUE,
+  moviename = "movie.mov",
+  header = NULL,
+  missmat = NULL
+)
 }
 \arguments{
 \item{shapem1}{A shape motion}
@@ -28,5 +36,5 @@ facemovie(shapem1, mfconfig, shapem2 = NULL, everynth = 6, adjust = TRUE,
 nothing - find movie file in "animations" directory. Second sequence is in red
 }
 \description{
-Make a facial motion movie
+Requires availability of the convert function from Imagemagick
 }

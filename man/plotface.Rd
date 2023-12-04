@@ -4,9 +4,17 @@
 \alias{plotface}
 \title{Plot a face or a pair of faces}
 \usage{
-plotface(fm, mfconfig, fm2 = NULL, view = c("front", "side", "top"),
-  num = TRUE, main = "", markerlabs = NULL, dirm = c("arrows", "points",
-  "segments"), subset = 1:nrow(fm))
+plotface(
+  fm,
+  mfconfig,
+  fm2 = NULL,
+  view = c("front", "side", "lside", "top", "rside"),
+  num = TRUE,
+  main = "",
+  markerlabs = NULL,
+  dirm = c("arrows", "points", "segments"),
+  subset = 1:nrow(fm)
+)
 }
 \arguments{
 \item{fm}{A face matrix}

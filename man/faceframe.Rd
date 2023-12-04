@@ -4,8 +4,7 @@
 \alias{faceframe}
 \title{Construct a single frame suitable for movie construction}
 \usage{
-faceframe(fc1, mfconfig, fc2 = NULL, rang = NULL, box = FALSE,
-  header = FALSE)
+faceframe(fc1, mfconfig, fc2 = NULL, rang = NULL, box = FALSE, header = FALSE)
 }
 \arguments{
 \item{fc1}{A face}
